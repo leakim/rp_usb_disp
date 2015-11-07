@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 import usb
 import types
 import struct
@@ -6,6 +8,23 @@ from time import sleep
 
 VENDOR_ID  = 0xfccf
 PRODUCT_ID = 0xa001
+
+WIDTH  = 320
+HEIGHT = 240
+
+CMD_START = (1<<7)
+CMD_CLEAR = (1<<6)
+
+CMD_FILL = 1
+CMD_IMG  = 2
+CMD_RECT = 3
+CMD_COPY = 4
+
+OP_COPY = 0
+OP_XOR  = 1
+OP_OR   = 2
+OP_AND  = 3
+
 
 def print_dev(dev):
     print "Device:", dev.filename
@@ -60,20 +79,27 @@ def rgb565(r=0, g=0, b=0):
 def rgb555(r=0, g=0, b=0):
     return rgb565(r=r,g=(g<<1), b=b)
 
-def fill_rgb(color):
-    return struct.pack('<B', 0x80 + 0x40 + 1) + color
-
-OP_COPY = 0
-OP_XOR  = 1
-OP_OR   = 2
-OP_AND  = 3
-
 def rect(left, top, w, h, color, op):
     right = left + w
     bottom =  top + h
-    cmd = struct.pack('<B', 0x80 + 0x40 + 3)
-    rect = struct.pack('<HHHH', left, top, right, bottom)
-    return cmd + rect + color + chr(op)
+    data = struct.pack('<HHHH', left, top, right, bottom)
+    return [CMD_RECT, data + color + chr(op)]
+
+class Img:
+    def __init__(self, w, h):
+        self.w, self.h = w, h
+        self.pixels = [rgb565(0, 0, 0)]*w*h
+
+    def pset(self, i, r, g, b):
+        self.pixels[i] = rgb555(r, g, b)
+
+    def pack(self, x, y, op):
+        h = struct.pack('<HHHH', x, y, self.w, self.h)
+        # data is 16 bit/pix ; N=w*h
+        data = b''
+        for p in self.pixels:
+            data += p
+        return [CMD_IMG, h + chr(op), data]
 
 class usb_disp:
     def __init__(self):
@@ -90,9 +116,16 @@ class usb_disp:
         if not self.dev: return
         self.dev.releaseInterface()
 
-    def send(self, cmd):
+    def send(self, cmd_id, cmd, payload=b'', PKT_MAX = 63):
         if not self.dev: return
-        self.dev.bulkWrite(self.ep.address, cmd)
+        h = chr(CMD_START | CMD_CLEAR | cmd_id)
+        o = PKT_MAX - len(cmd)
+        pkt = h + cmd + payload[0:o]
+        self.dev.bulkWrite(self.ep.address, pkt)
+        h = chr(cmd_id)
+        for i in xrange(o , len(payload), PKT_MAX):
+            pkt = h + payload[i:i + PKT_MAX]
+            self.dev.bulkWrite(self.ep.address, pkt)
 
 colors = [
     rgb555(
@@ -131,18 +164,47 @@ colors = [
 
 d = usb_disp()
 
+#####################################################################
+
 for color in colors:
-    d.send( fill_rgb(color) )
+    d.send( CMD_FILL, color)
     sleep(0.5)
 
 for i in xrange(0,31):
-    d.send( fill_rgb( rgb555( r=i, g=i, b=i) ) )
+    d.send( CMD_FILL, rgb555(r=i, g=i, b=i) )
     sleep(0.010)
-    print "%x" % i
 
-d.send( fill_rgb( rgb555( r=0, g=0, b=0) ) )
-d.send( rect( 100, 50, 200, 80, rgb555(0,0,16), OP_COPY) )
-d.send( rect( 150, 100, 50, 100, rgb555(16,0,0), OP_OR) )
-sleep(1)
+d.send( CMD_FILL, rgb555(r=0, g=0, b=0) )
+d.send( *rect( 0, HEIGHT - 10, WIDTH, 10, rgb555(0,0,8), OP_OR) )
+d.send( *rect( WIDTH - 10, 0, 10, HEIGHT, rgb555(0,0,8), OP_OR) )
+d.send( *rect( 50,  150, 200, 60, rgb555(0,0,8), OP_OR) )
+d.send( *rect( 150, 140, 50, 100, rgb555(0,8,0), OP_OR) )
+sleep(0.1)
+
+#####################################################################
+
+import Image
+import ImageFont
+import ImageDraw
+
+fontsize = 18
+font = ImageFont.truetype('couri.ttf', fontsize)
+image = Image.new("RGB", (WIDTH, HEIGHT), (0, 0, 0))
+draw = ImageDraw.Draw(image)
+
+txt = [
+    u'RaspberryPi USB display',
+    u'python + libusb',
+    u'(320x240)',
+    u'github.com/leakim/...',
+]
+for i, line in enumerate( txt ):
+    draw.text((0, i*fontsize), line, (31,31,31), font=font)
+img = Img(WIDTH, HEIGHT)
+for i, p in enumerate(image.getdata()):
+    img.pset(i, *p)
+d.send( *img.pack(0, 0, OP_OR) )
+
+#####################################################################
 
 d.close()
