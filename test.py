@@ -103,29 +103,29 @@ class Img:
 
 class usb_disp:
     def __init__(self):
-        self.dev = None
+        self.devh = None
         dev = find_disp()
         if not dev: return
         print_dev(dev)
         ep, intf = find_endp(dev)
-        odev = dev.open()
-        odev.claimInterface(intf)
-        self.dev, self.intf, self.ep = odev, intf, ep
+        devh = dev.open()
+        devh.claimInterface(intf)
+        self.devh, self.intf, self.ep = devh, intf, ep
 
     def close(self):
-        if not self.dev: return
-        self.dev.releaseInterface()
+        if not self.devh: return
+        self.devh.releaseInterface()
 
     def send(self, cmd_id, cmd, payload=b'', PKT_MAX = 63):
-        if not self.dev: return
+        if not self.devh: return
         h = chr(CMD_START | CMD_CLEAR | cmd_id)
         o = PKT_MAX - len(cmd)
         pkt = h + cmd + payload[0:o]
-        self.dev.bulkWrite(self.ep.address, pkt)
+        self.devh.bulkWrite(self.ep.address, pkt)
         h = chr(cmd_id)
         for i in xrange(o , len(payload), PKT_MAX):
             pkt = h + payload[i:i + PKT_MAX]
-            self.dev.bulkWrite(self.ep.address, pkt)
+            self.devh.bulkWrite(self.ep.address, pkt)
 
 colors = [
     rgb555(
