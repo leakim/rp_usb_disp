@@ -188,7 +188,7 @@ import ImageFont
 import ImageDraw
 
 fontsize = 18
-font = ImageFont.truetype('couri.ttf', fontsize)
+font = ImageFont.truetype('FreeMono.ttf', fontsize)
 image = Image.new("RGB", (WIDTH, HEIGHT), (0, 0, 0))
 draw = ImageDraw.Draw(image)
 
