@@ -129,7 +129,7 @@ class usb_disp:
     def touchRead(self):
         if not self.devh: return
         try:
-            tup = self.devh.interruptRead(0x82L, 32, 500)
+            tup = self.devh.interruptRead(0x82L, 32, 100)
         except usb.USBError:
             # Timeout
             return None
@@ -142,6 +142,18 @@ class usb_disp:
         #print tup
         print pkt_type,status,tstatus,x,y
         return (x, y)
+
+def draw_text(d, txt, h=20, w=WIDTH/3):
+    fontsize = 18
+    font = ImageFont.truetype('FreeMono.ttf', fontsize)
+    d.send(*rect(0, HEIGHT - h, w, h, rgb555(0,0,0), OP_COPY))
+    f_image = Image.new("RGB", (w, h), (0, 0, 0))
+    f_draw = ImageDraw.Draw(f_image)
+    f_draw.text((0, 0), "(%02d, %02d)" % (r[0], r[1]), (31,31,31), font=font)
+    img = Img(w, h)
+    for i, p in enumerate(f_image.getdata()):
+        img.pset(i, *p)
+    d.send(*img.pack(0, HEIGHT-h, OP_OR))
 
 colors = [
     rgb555(
@@ -222,7 +234,10 @@ for i, p in enumerate(image.getdata()):
 d.send(*img.pack(0, 0, OP_OR))
 
 while True:
-    d.touchRead()
+    r = d.touchRead()
+    if r:
+        txt = "(%02d, %02d)" % (r[0], r[1])
+        draw_text(d, txt)
 
 #####################################################################
 
