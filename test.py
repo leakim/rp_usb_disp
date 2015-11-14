@@ -126,6 +126,23 @@ class usb_disp:
             pkt = h + payload[i:i + PKT_MAX]
             self.devh.bulkWrite(self.ep.address, pkt)
 
+    def touchRead(self):
+        if not self.devh: return
+        try:
+            tup = self.devh.interruptRead(0x82L, 32, 500)
+        except usb.USBError:
+            # Timeout
+            return None
+        # pkt type
+        # display status
+        # touch status 1/0
+        # touch X
+        # touch Y
+        pkt_type,status,tstatus,x,_,y,_ = struct.unpack('<BBBHHHH', b''.join([chr(c) for c in tup]))
+        #print tup
+        print pkt_type,status,tstatus,x,y
+        return (x, y)
+
 colors = [
     rgb555(
         r=0x1f,
@@ -203,6 +220,9 @@ img = Img(WIDTH, HEIGHT)
 for i, p in enumerate(image.getdata()):
     img.pset(i, *p)
 d.send(*img.pack(0, 0, OP_OR))
+
+while True:
+    d.touchRead()
 
 #####################################################################
 
