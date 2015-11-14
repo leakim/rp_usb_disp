@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 import usb
-import types
 import struct
 from time import sleep
 
@@ -12,8 +11,8 @@ PRODUCT_ID = 0xa001
 WIDTH  = 320
 HEIGHT = 240
 
-CMD_START = (1<<7)
-CMD_CLEAR = (1<<6)
+CMD_START = (1 << 7)
+CMD_CLEAR = (1 << 6)
 
 CMD_FILL = 1
 CMD_IMG  = 2
@@ -123,7 +122,7 @@ class usb_disp:
         pkt = h + cmd + payload[0:o]
         self.devh.bulkWrite(self.ep.address, pkt)
         h = chr(cmd_id)
-        for i in xrange(o , len(payload), PKT_MAX):
+        for i in xrange(o, len(payload), PKT_MAX):
             pkt = h + payload[i:i + PKT_MAX]
             self.devh.bulkWrite(self.ep.address, pkt)
 
@@ -174,7 +173,7 @@ for i in xrange(0,31):
     d.send( CMD_FILL, rgb555(r=i, g=i, b=i) )
     sleep(0.010)
 
-d.send( CMD_FILL, rgb555(r=0, g=0, b=0) )
+d.send(CMD_FILL, rgb555(r=0, g=0, b=0))
 d.send( *rect( 0, HEIGHT - 10, WIDTH, 10, rgb555(0,0,8), OP_OR) )
 d.send( *rect( WIDTH - 10, 0, 10, HEIGHT, rgb555(0,0,8), OP_OR) )
 d.send( *rect( 50,  150, 200, 60, rgb555(0,0,8), OP_OR) )
@@ -198,12 +197,12 @@ txt = [
     u'(320x240)',
     u'github.com/leakim/...',
 ]
-for i, line in enumerate( txt ):
+for i, line in enumerate(txt):
     draw.text((0, i*fontsize), line, (31,31,31), font=font)
 img = Img(WIDTH, HEIGHT)
 for i, p in enumerate(image.getdata()):
     img.pset(i, *p)
-d.send( *img.pack(0, 0, OP_OR) )
+d.send(*img.pack(0, 0, OP_OR))
 
 #####################################################################
 
