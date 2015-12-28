@@ -24,6 +24,17 @@ OP_XOR  = 1
 OP_OR   = 2
 OP_AND  = 3
 
+# fonts available on a RbPI OSMC
+#/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf
+#/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf
+#/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf
+#/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf
+#/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf
+#/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf
+
+font_path = '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
+font_path = 'FreeMono.ttf'
+
 
 def print_dev(dev):
     print "Device:", dev.filename
@@ -145,7 +156,7 @@ class usb_disp:
 
 def draw_text(d, txt, h=20, w=WIDTH/3):
     fontsize = 18
-    font = ImageFont.truetype('FreeMono.ttf', fontsize)
+    font = ImageFont.truetype(font_path, fontsize)
     d.send(*rect(0, HEIGHT - h, w, h, rgb555(0,0,0), OP_COPY))
     f_image = Image.new("RGB", (w, h), (0, 0, 0))
     f_draw = ImageDraw.Draw(f_image)
@@ -216,7 +227,7 @@ import ImageFont
 import ImageDraw
 
 fontsize = 18
-font = ImageFont.truetype('FreeMono.ttf', fontsize)
+font = ImageFont.truetype(font_path, fontsize)
 image = Image.new("RGB", (WIDTH, HEIGHT), (0, 0, 0))
 draw = ImageDraw.Draw(image)
 
